@@ -1,0 +1,69 @@
+{
+  "company_name": "VS-Saumarit Oy",
+  "industry": "Construction Services",
+  "sub_industry": "Specialized Trade Contractors - Sealing and Waterproofing",
+  "market_overview": {
+    "region": "Southern Finland",
+    "market_trends": [
+      "Infrastructure investment growth",
+      "Sustainability requirements increasing",
+      "Digital transformation in construction",
+      "Growing demand for specialized trades",
+      "Quality waterproofing demand for building longevity",
+      "Energy efficiency requirements driving sealing services"
+    ],
+    "market_size": "Part of broader Finnish construction services market"
+  },
+  "competitive_landscape": {
+    "direct_competitors": [
+      "Consti Yhtiöt",
+      "VIK-Rakennus Oy",
+      "Kreate Oy"
+    ],
+    "competitive_positioning": "Specialized micro-enterprise focusing on elastic sealing and waterproofing vs. larger general contractors"
+  },
+  "target_segments": [
+    {
+      "segment": "Construction Companies",
+      "description": "General contractors and construction firms in Southern Finland requiring specialized sealing subcontractors for projects",
+      "priority": "high"
+    },
+    {
+      "segment": "Property Developers",
+      "description": "Real estate developers managing renovation and new construction projects requiring waterproofing expertise",
+      "priority": "high"
+    },
+    {
+      "segment": "Building Owners",
+      "description": "Commercial and residential property owners needing renovation sealing services",
+      "priority": "medium"
+    },
+    {
+      "segment": "Property Management Companies",
+      "description": "Organizations managing multiple properties requiring regular maintenance and renovation sealing work",
+      "priority": "medium"
+    }
+  ],
+  "key_buying_factors": [
+    "Technical expertise in elastic sealing",
+    "Quality of waterproofing work",
+    "Reliability and project completion",
+    "Regional availability in Southern Finland",
+    "Experience with both renovation and new construction",
+    "Compliance with Finnish building codes and standards"
+  ],
+  "market_challenges": [
+    "Competition from larger construction companies",
+    "Seasonal construction cycles in Finland",
+    "Economic sensitivity of construction market",
+    "Need for continuous technical skill development",
+    "Building code and regulation changes"
+  ],
+  "growth_opportunities": [
+    "Increasing renovation activity in aging building stock",
+    "Energy efficiency retrofitting projects",
+    "Sustainability-driven waterproofing upgrades",
+    "Partnership with general contractors as specialized subcontractor",
+    "Building long-term relationships with property developers"
+  ]
+}

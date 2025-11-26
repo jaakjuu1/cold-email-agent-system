@@ -1,0 +1,23 @@
+# Python dependencies for Claude skills
+
+# AI & LLM
+anthropic>=0.18.0
+
+# Web scraping & APIs
+aiohttp>=3.9.0
+requests>=2.31.0
+firecrawl-py>=0.0.15
+
+# Google Maps
+googlemaps>=4.10.0
+
+# Email
+imapclient>=3.0.0
+
+# Data processing
+pandas>=2.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+

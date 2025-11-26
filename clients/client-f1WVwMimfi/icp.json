@@ -1,0 +1,143 @@
+{
+  "icp_summary": "VS-Saumarit Oy's ideal customers are established construction companies and property developers in Southern Finland with 10-200 employees and annual revenues of \u20ac1M-\u20ac50M who regularly manage renovation and new construction projects requiring specialized elastic sealing and waterproofing services. These companies value technical expertise, quality workmanship, and reliable project completion while seeking trusted subcontractor partnerships to handle specialized trades they don't perform in-house.",
+  "firmographic_criteria": {
+    "company_size": {
+      "employee_ranges": [
+        "10-50",
+        "50-200"
+      ],
+      "revenue_ranges": [
+        "\u20ac1M-\u20ac10M",
+        "\u20ac10M-\u20ac50M"
+      ]
+    },
+    "company_stage": [
+      "established",
+      "growth"
+    ],
+    "funding_status": [
+      "bootstrapped",
+      "private_equity",
+      "established_profitable"
+    ]
+  },
+  "geographic_targeting": {
+    "primary_markets": [
+      {
+        "city": "Helsinki",
+        "region": "Uusimaa",
+        "country": "Finland",
+        "priority": "high"
+      },
+      {
+        "city": "Espoo",
+        "region": "Uusimaa",
+        "country": "Finland",
+        "priority": "high"
+      },
+      {
+        "city": "Vantaa",
+        "region": "Uusimaa",
+        "country": "Finland",
+        "priority": "high"
+      },
+      {
+        "city": "Tampere",
+        "region": "Pirkanmaa",
+        "country": "Finland",
+        "priority": "medium"
+      }
+    ],
+    "expansion_markets": [
+      {
+        "city": "Turku",
+        "region": "Southwest Finland",
+        "country": "Finland",
+        "priority": "low"
+      }
+    ]
+  },
+  "industry_targeting": {
+    "primary_industries": [
+      {
+        "name": "General Construction",
+        "sub_segments": [
+          "Commercial Construction",
+          "Residential Construction"
+        ],
+        "priority": "high"
+      },
+      {
+        "name": "Property Development",
+        "sub_segments": [
+          "Residential Development",
+          "Commercial Development"
+        ],
+        "priority": "high"
+      }
+    ],
+    "secondary_industries": [
+      {
+        "name": "Property Management",
+        "sub_segments": [
+          "Commercial Property Management",
+          "Residential Property Management"
+        ],
+        "priority": "medium"
+      },
+      {
+        "name": "Building Renovation Services",
+        "sub_segments": [
+          "Historic Restoration",
+          "Building Modernization"
+        ],
+        "priority": "medium"
+      }
+    ]
+  },
+  "decision_maker_targeting": {
+    "primary_titles": [
+      "Project Manager",
+      "Construction Manager",
+      "Technical Director",
+      "Operations Manager"
+    ],
+    "secondary_titles": [
+      "Site Manager",
+      "Building Owner",
+      "Property Developer",
+      "Procurement Manager"
+    ],
+    "departments": [
+      "Construction Operations",
+      "Project Management",
+      "Technical Services",
+      "Property Development"
+    ]
+  },
+  "messaging_framework": {
+    "primary_pain_points_to_address": [
+      "Finding reliable specialized subcontractors for elastic sealing and waterproofing work",
+      "Ensuring long-term building integrity through proper waterproofing in Finnish climate conditions",
+      "Meeting strict Finnish building codes and energy efficiency requirements",
+      "Managing project timelines with dependable specialized trade contractors"
+    ],
+    "value_propositions": [
+      "Specialized expertise in elastic sealing and waterproofing techniques for both renovation and new construction",
+      "Direct access to company owner Ville Suutari ensuring personalized service and accountability",
+      "Comprehensive service offering from installation to expert consultation",
+      "Deep understanding of Southern Finland market and local building requirements"
+    ],
+    "proof_points": [
+      "Established business with proven track record in Southern Finland market",
+      "Specialized focus allows for deeper expertise than general contractors",
+      "Direct owner involvement ensures quality control and project commitment",
+      "Experience across both renovation and new construction project types"
+    ],
+    "objection_handlers": {
+      "price": "Specialized expertise prevents costly waterproofing failures and ensures long-term building integrity, delivering superior ROI through reduced maintenance and repair costs",
+      "company_size": "As a focused specialist, we provide personalized attention and flexibility that larger contractors cannot match, with direct owner involvement in every project",
+      "availability": "Our regional focus on Southern Finland allows us to be more responsive and available than companies spread across larger territories"
+    }
+  }
+}

@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # ===========================================
+  # Redis (Task Queue & Cache)
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: cold-outreach-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ===========================================
+  # Backend API Server
+  # ===========================================
+  backend:
+    build:
+      context: .
+      target: backend
+    container_name: cold-outreach-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - FRONTEND_URL=http://localhost
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - agentfs_data:/app/.agentfs
+      - skills_data:/app/.claude/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ===========================================
+  # Frontend (Nginx)
+  # ===========================================
+  frontend:
+    build:
+      context: .
+      target: frontend
+    container_name: cold-outreach-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ===========================================
+  # IMAP Monitor (Python Worker)
+  # ===========================================
+  imap-monitor:
+    build:
+      context: .
+      target: python-skills
+    container_name: cold-outreach-imap
+    command: python .claude/skills/email-tracking/monitoring/imap_monitor.py
+    environment:
+      - IMAP_HOST=${IMAP_HOST}
+      - IMAP_PORT=${IMAP_PORT}
+      - IMAP_USER=${IMAP_USER}
+      - IMAP_PASS=${IMAP_PASS}
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    volumes:
+      - skills_data:/app/.claude/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  agentfs_data:
+  skills_data:

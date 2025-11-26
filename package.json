@@ -1,0 +1,38 @@
+{
+  "name": "cold-outreach-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered B2B cold outreach automation system",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "build:backend": "pnpm --filter @cold-outreach/shared build && pnpm --filter @cold-outreach/agent build && pnpm --filter @cold-outreach/backend build",
+    "build:frontend": "pnpm --filter @cold-outreach/shared build && pnpm --filter @cold-outreach/frontend build",
+    "test": "pnpm --filter @cold-outreach/backend test && pnpm --filter @cold-outreach/frontend test",
+    "test:backend": "pnpm --filter @cold-outreach/backend test",
+    "test:frontend": "pnpm --filter @cold-outreach/frontend test",
+    "test:e2e": "pnpm --filter @cold-outreach/e2e test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "backend": "pnpm --filter @cold-outreach/backend",
+    "frontend": "pnpm --filter @cold-outreach/frontend",
+    "agent": "pnpm --filter @cold-outreach/agent",
+    "shared": "pnpm --filter @cold-outreach/shared",
+    "e2e": "pnpm --filter @cold-outreach/e2e"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
+
