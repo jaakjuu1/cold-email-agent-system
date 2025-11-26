@@ -15,19 +15,23 @@ This skill generates highly personalized cold email sequences based on prospect 
 
 ## Workflow
 
+**IMPORTANT**: Use `uvx` to run Python scripts with dependencies managed automatically.
+
 ### Step 1: Generate Email Sequence
 ```bash
-python personalization_engine.py \
-  --prospect /prospects/<location>/<industry>/prospect.json \
-  --icp /clients/<client_id>/icp.json \
-  --templates /templates/default/ \
-  --output /campaigns/<campaign_id>/emails/<prospect_id>/
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/email-personalization/personalization_engine.py \
+  --prospect /tmp/prospects/<location>/<industry>/prospect.json \
+  --icp /tmp/clients/<client_id>/icp.json \
+  --templates .claude/skills/email-personalization/templates/default/ \
+  --output /tmp/campaigns/<campaign_id>/emails/<prospect_id>/
 ```
 
 ### Step 2: Quality Check
 ```bash
-python quality_checker.py \
-  --email /campaigns/<campaign_id>/emails/<prospect_id>/email_1.json \
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/email-personalization/quality_checker.py \
+  --email /tmp/campaigns/<campaign_id>/emails/<prospect_id>/email_1.json \
   --min-score 80
 ```
 

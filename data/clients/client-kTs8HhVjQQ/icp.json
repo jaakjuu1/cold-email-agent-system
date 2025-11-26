@@ -1,0 +1,141 @@
+{
+  "icp_summary": "VS-Saumarit Oy's ideal customers are established mid-sized construction companies and general contractors in Southern Finland with 20-200 employees and \u20ac2M-\u20ac50M annual revenue. These companies handle multiple concurrent residential, commercial, and infrastructure projects requiring specialized sealing and caulking services, prioritize quality and regulatory compliance, and value long-term partnerships with reliable local subcontractors who understand Nordic climate challenges and Finnish building standards.",
+  "firmographic_criteria": {
+    "company_size": {
+      "employee_ranges": [
+        "20-50",
+        "50-200"
+      ],
+      "revenue_ranges": [
+        "\u20ac2M-\u20ac10M",
+        "\u20ac10M-\u20ac50M"
+      ]
+    },
+    "company_stage": [
+      "established",
+      "growth"
+    ],
+    "funding_status": [
+      "bootstrapped",
+      "private_equity",
+      "family_owned"
+    ]
+  },
+  "geographic_targeting": {
+    "primary_markets": [
+      {
+        "city": "Helsinki",
+        "state": "Uusimaa",
+        "country": "Finland",
+        "priority": "high"
+      },
+      {
+        "city": "Espoo",
+        "state": "Uusimaa",
+        "country": "Finland",
+        "priority": "high"
+      },
+      {
+        "city": "Vantaa",
+        "state": "Uusimaa",
+        "country": "Finland",
+        "priority": "high"
+      },
+      {
+        "city": "Lahti",
+        "state": "P\u00e4ij\u00e4t-H\u00e4me",
+        "country": "Finland",
+        "priority": "high"
+      }
+    ],
+    "expansion_markets": [
+      {
+        "city": "Tampere",
+        "state": "Pirkanmaa",
+        "country": "Finland",
+        "priority": "medium"
+      }
+    ]
+  },
+  "industry_targeting": {
+    "primary_industries": [
+      {
+        "name": "Construction Services",
+        "sub_segments": [
+          "General Contractors",
+          "Building Renovation Specialists"
+        ],
+        "priority": "high"
+      },
+      {
+        "name": "Residential Construction",
+        "sub_segments": [
+          "Multi-family Housing",
+          "Single-family Construction"
+        ],
+        "priority": "high"
+      }
+    ],
+    "secondary_industries": [
+      {
+        "name": "Commercial Construction",
+        "sub_segments": [
+          "Office Buildings",
+          "Retail Construction"
+        ],
+        "priority": "medium"
+      },
+      {
+        "name": "Infrastructure",
+        "sub_segments": [
+          "Public Buildings",
+          "Industrial Facilities"
+        ],
+        "priority": "medium"
+      }
+    ]
+  },
+  "decision_maker_targeting": {
+    "primary_titles": [
+      "Project Manager",
+      "Construction Manager",
+      "General Contractor/Owner"
+    ],
+    "secondary_titles": [
+      "Site Supervisor",
+      "Procurement Manager",
+      "Technical Director"
+    ],
+    "departments": [
+      "Project Management",
+      "Operations",
+      "Procurement"
+    ]
+  },
+  "messaging_framework": {
+    "primary_pain_points_to_address": [
+      "Building envelope failures leading to moisture damage and costly warranty claims",
+      "Difficulty finding specialized sealing contractors with Nordic climate expertise",
+      "Compliance challenges with Finnish building regulations and environmental standards",
+      "Need for reliable local subcontractors who can meet tight project deadlines"
+    ],
+    "value_propositions": [
+      "Exclusive specialization in elastic sealing and caulking eliminates the risk of generalist contractor mistakes",
+      "Nordic climate-resistant solutions prevent costly moisture damage and warranty claims",
+      "Direct owner involvement ensures accountability and consistent quality across all projects",
+      "Local Southern Finland presence enables rapid response and deep regional compliance knowledge"
+    ],
+    "proof_points": [
+      "\u20ac322K revenue with established track record in Southern Finland market",
+      "Comprehensive expertise in both renovation and new construction projects",
+      "Deep understanding of Finnish building regulations and environmental standards",
+      "Owner Ville Suutari's direct involvement in every project"
+    ],
+    "objection_handlers": {
+      "price": "Our specialized expertise prevents costly building envelope failures and warranty claims that far exceed our service costs, while ensuring long-term project success and client satisfaction.",
+      "timing": "With our local Southern Finland presence and focused specialization, we can respond quickly to urgent sealing needs and integrate seamlessly into your existing project timeline.",
+      "capacity": "As specialists rather than generalists, we can efficiently handle your sealing requirements while you focus on your core construction activities, creating a win-win partnership.",
+      "relationship": "Direct owner involvement means you get consistent quality and accountability, plus we're invested in long-term relationships rather than one-off transactions."
+    }
+  }
+}

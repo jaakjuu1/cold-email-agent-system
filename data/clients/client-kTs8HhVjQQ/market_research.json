@@ -1,0 +1,109 @@
+{
+  "market_overview": {
+    "global_market_size": "$17.9 billion by 2035",
+    "growth_drivers": [
+      "Increasing demand for high-performance, eco-friendly sealant solutions",
+      "Alignment with green building standards",
+      "Growing renovation and construction activity",
+      "Stricter environmental compliance requirements"
+    ],
+    "regional_focus": "Southern Finland (Etelä-Suomi)"
+  },
+  "target_market_characteristics": {
+    "primary_customers": {
+      "type": "Construction companies, general contractors, building renovation specialists",
+      "size": "Mid-sized firms with 20-200 employees",
+      "revenue": "€2M-€50M annual revenue",
+      "geographic_locations": [
+        "Helsinki metropolitan area (Helsinki, Espoo, Vantaa)",
+        "Lahti",
+        "Tampere"
+      ],
+      "project_types": [
+        "Residential construction and renovation",
+        "Commercial construction and renovation",
+        "Infrastructure projects"
+      ]
+    }
+  },
+  "customer_pain_points": [
+    "Need for specialized sealing and caulking expertise rather than generalist contractors",
+    "Compliance with Finnish building regulations and environmental standards",
+    "Performance under extreme Nordic climate conditions (temperature fluctuations, moisture, freeze-thaw cycles)",
+    "Finding reliable specialized subcontractors with regional knowledge",
+    "Quality assurance and long-term warranty requirements",
+    "Coordination between multiple trades on complex projects",
+    "Meeting tight project deadlines while maintaining quality standards",
+    "Building envelope failures leading to moisture damage and warranty claims"
+  ],
+  "buying_behavior": {
+    "decision_makers": [
+      "Project Managers",
+      "Construction Managers",
+      "Site Supervisors",
+      "Procurement Managers",
+      "Technical Directors",
+      "General Contractors/Business Owners"
+    ],
+    "buying_criteria": [
+      "Specialized expertise in sealing and caulking",
+      "Knowledge of Finnish building standards",
+      "Track record and reliability",
+      "Response time and availability",
+      "Quality of work and warranties",
+      "Competitive pricing",
+      "Local presence and regional knowledge"
+    ],
+    "typical_project_cycle": "Varies by project type - renovation projects 2-6 months, new construction 6-24 months"
+  },
+  "competitive_landscape": {
+    "competition_type": "Specialized sealing contractors and generalist construction companies offering sealing services",
+    "key_differentiators_needed": [
+      "Exclusive specialization vs. generalist approach",
+      "Nordic climate expertise",
+      "Local Southern Finland presence",
+      "Direct owner involvement and accountability",
+      "Comprehensive service for both renovation and new construction"
+    ]
+  },
+  "market_trends": {
+    "industry_trends": [
+      "Increasing focus on building energy efficiency and envelope performance",
+      "Stricter environmental regulations",
+      "Growing renovation market as building stock ages",
+      "Demand for sustainable and eco-friendly construction materials",
+      "Integration of new sealing technologies and materials",
+      "Higher quality standards and warranty expectations"
+    ],
+    "regional_trends": [
+      "Growth in Helsinki metropolitan area construction",
+      "Aging building stock requiring renovation in Finland",
+      "Government initiatives for energy-efficient buildings",
+      "Increased focus on moisture damage prevention"
+    ]
+  },
+  "ideal_customer_indicators": {
+    "firmographic": [
+      "Construction companies with 20-200 employees",
+      "€2M-€50M annual revenue",
+      "Located in Southern Finland",
+      "Established businesses with ongoing project pipeline",
+      "Focus on quality and compliance"
+    ],
+    "behavioral": [
+      "Handle multiple concurrent projects",
+      "Work with specialized subcontractors",
+      "Value long-term partnerships",
+      "Prioritize quality and warranty protection",
+      "Need reliable local suppliers",
+      "Face tight project deadlines"
+    ],
+    "project_characteristics": [
+      "Residential, commercial, or infrastructure projects",
+      "Both renovation and new construction",
+      "Projects requiring building envelope work",
+      "Projects with strict compliance requirements",
+      "Projects in Nordic climate conditions"
+    ]
+  }
+}

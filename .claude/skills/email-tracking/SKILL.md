@@ -28,7 +28,8 @@ This skill monitors email responses, tracks engagement events, and classifies re
 
 ### Start IMAP Monitor
 ```bash
-python monitoring/imap_monitor.py \
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/email-tracking/monitoring/imap_monitor.py \
   --host imap.gmail.com \
   --user outreach@company.com \
   --poll-interval 60
@@ -36,10 +37,13 @@ python monitoring/imap_monitor.py \
 
 ### Check Responses (On-demand)
 ```bash
-python monitoring/check_responses.py \
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/email-tracking/monitoring/check_responses.py \
   --campaign-id campaign-xxx \
   --since 2024-01-01
 ```
+
+**Important**: Always use `uvx` to run Python scripts to ensure dependencies are available without creating a .venv folder.
 
 ## Event Format
 

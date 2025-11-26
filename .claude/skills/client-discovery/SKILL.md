@@ -15,27 +15,37 @@ This skill analyzes a client's business through their website and market researc
 
 ## Workflow
 
+**IMPORTANT**: Use `uvx` to run Python scripts with dependencies managed automatically.
+
 ### Step 1: Website Analysis
 ```bash
-python analysis/website_analyzer.py --url <website_url> --output /clients/<client_id>/website_analysis.json
+uvx --with firecrawl-py --with anthropic --with aiohttp --with python-dotenv \
+  python .claude/skills/client-discovery/analysis/website_analyzer.py \
+  --url <website_url> --output /tmp/clients/<client_id>/website_analysis.json
 ```
 
 ### Step 2: Market Research
 ```bash
-python analysis/market_researcher.py --company <company_name> --industry <industry> --output /clients/<client_id>/market_research.json
+uvx --with anthropic --with aiohttp --with python-dotenv \
+  python .claude/skills/client-discovery/analysis/market_researcher.py \
+  --company <company_name> --industry <industry> \
+  --output /tmp/clients/<client_id>/market_research.json
 ```
 
 ### Step 3: ICP Generation
 ```bash
-python analysis/icp_generator.py \
-  --website-analysis /clients/<client_id>/website_analysis.json \
-  --market-research /clients/<client_id>/market_research.json \
-  --output /clients/<client_id>/icp.json
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/client-discovery/analysis/icp_generator.py \
+  --website-analysis /tmp/clients/<client_id>/website_analysis.json \
+  --market-research /tmp/clients/<client_id>/market_research.json \
+  --output /tmp/clients/<client_id>/icp.json
 ```
 
 ### Step 4: ICP Validation
 ```bash
-python analysis/icp_validator.py --icp /clients/<client_id>/icp.json
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/client-discovery/analysis/icp_validator.py \
+  --icp /tmp/clients/<client_id>/icp.json
 ```
 
 ## Output Format

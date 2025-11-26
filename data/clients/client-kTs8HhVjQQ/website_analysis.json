@@ -1,0 +1,59 @@
+{
+  "company_name": "VS-Saumarit Oy",
+  "website": "https://www.vs-saumarit.fi/",
+  "industry": "Construction Services",
+  "sub_industry": "Sealing and Caulking Services",
+  "value_proposition": "VS-Saumarit Oy provides specialized elastic sealing and caulking services for both renovation (saneeraus) and new construction (uudiskohteet) projects throughout Southern Finland. The company delivers comprehensive expertise in building envelope waterproofing, insulation, and compliance with Finnish building standards, offering personalized service through direct owner involvement and deep regional market knowledge.",
+  "products_services": [
+    "Elastic sealing services for renovation projects",
+    "Elastic sealing services for new construction",
+    "Building envelope waterproofing",
+    "Window and door sealing",
+    "Caulking and joint filling",
+    "Consultation services for sealing requirements",
+    "Quality assurance for sealing installations",
+    "Nordic climate-resistant sealing solutions"
+  ],
+  "target_customers": {
+    "primary": "Construction companies, general contractors, and building renovation specialists in Southern Finland",
+    "geographic_focus": "Helsinki metropolitan area (Helsinki, Espoo, Vantaa), Lahti, and Tampere",
+    "company_size": "Mid-sized construction firms with 20-200 employees",
+    "revenue_range": "€2M-€50M in annual revenue",
+    "project_types": "Residential, commercial, and infrastructure projects"
+  },
+  "key_differentiators": [
+    "Exclusive focus on elastic sealing and caulking - specialized expertise rather than generalist approach",
+    "Local Southern Finland presence enabling rapid response and regional compliance knowledge",
+    "Nordic climate expertise - specialized solutions for extreme weather conditions",
+    "Direct owner involvement (Ville Suutari) ensuring accountability and quality",
+    "Comprehensive service coverage for both renovation and new construction projects",
+    "Deep understanding of Finnish building regulations and environmental standards"
+  ],
+  "company_info": {
+    "size": "3 employees",
+    "stage": "Established (small family-owned business)",
+    "headquarters": "Lahti, Finland",
+    "revenue_2024": "€322,824",
+    "operating_margin": "1.2%",
+    "equity_ratio": "55%"
+  },
+  "expertise": {
+    "technical": [
+      "Elastic sealing and caulking",
+      "Building envelope waterproofing",
+      "Nordic climate-resistant solutions",
+      "Window and door sealing",
+      "Joint filling and maintenance"
+    ],
+    "regulatory": [
+      "Finnish building regulations",
+      "Environmental standards compliance",
+      "Quality assurance protocols"
+    ],
+    "market": [
+      "Southern Finland regional knowledge",
+      "Renovation project expertise",
+      "New construction project expertise"
+    ]
+  }
+}

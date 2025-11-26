@@ -35,18 +35,23 @@ This skill manages email campaign execution, including scheduling, rate limiting
 
 ## Scripts
 
+**Important**: Always use `uvx` to run Python scripts to ensure dependencies are available without creating a .venv folder.
+
 ### rate_limiter.py
 Manages sending rate limits and queue scheduling.
 
 ```bash
 # Check current rate limit status
-python rate_limiter.py status --campaign-id <id>
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/campaign-management/rate_limiter.py status --campaign-id <id>
 
 # Schedule next batch
-python rate_limiter.py schedule --campaign-id <id> --batch-size 50
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/campaign-management/rate_limiter.py schedule --campaign-id <id> --batch-size 50
 
 # Adjust limits
-python rate_limiter.py configure --hourly 100 --daily 500
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/campaign-management/rate_limiter.py configure --hourly 100 --daily 500
 ```
 
 ### response_tracker.py
@@ -54,10 +59,12 @@ Processes email responses and updates campaign state.
 
 ```bash
 # Process new responses
-python response_tracker.py process --campaign-id <id>
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/campaign-management/response_tracker.py process --campaign-id <id>
 
 # Generate response report
-python response_tracker.py report --campaign-id <id> --format json
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/campaign-management/response_tracker.py report --campaign-id <id> --format json
 ```
 
 ### analytics.py
@@ -65,10 +72,12 @@ Generates campaign performance analytics.
 
 ```bash
 # Generate daily report
-python analytics.py daily --campaign-id <id>
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/campaign-management/analytics.py daily --campaign-id <id>
 
 # Generate full campaign report
-python analytics.py campaign --campaign-id <id> --output report.json
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/campaign-management/analytics.py campaign --campaign-id <id> --output report.json
 ```
 
 ## Workflow

@@ -16,42 +16,49 @@ This skill discovers and enriches leads based on the Ideal Customer Profile, usi
 
 ## Workflow
 
+**IMPORTANT**: Use `uvx` to run Python scripts with dependencies managed automatically.
+
 ### Step 1: Search Google Maps
 ```bash
-python google-maps/scraper.py \
+uvx --with googlemaps --with python-dotenv \
+  python .claude/skills/lead-discovery/google-maps/scraper.py \
   --location "San Francisco, CA" \
   --industry "SaaS companies" \
   --limit 50 \
-  --output /prospects/sf-ca/saas/raw_results.json
+  --output /tmp/prospects/sf-ca/saas/raw_results.json
 ```
 
 ### Step 2: Parse Results
 ```bash
-python google-maps/parser.py \
-  --input /prospects/sf-ca/saas/raw_results.json \
-  --output /prospects/sf-ca/saas/parsed_results.json
+uvx --with python-dotenv \
+  python .claude/skills/lead-discovery/google-maps/parser.py \
+  --input /tmp/prospects/sf-ca/saas/raw_results.json \
+  --output /tmp/prospects/sf-ca/saas/parsed_results.json
 ```
 
 ### Step 3: Enrich Companies
 ```bash
-python research-pipeline/company_enricher.py \
-  --input /prospects/sf-ca/saas/parsed_results.json \
-  --output /prospects/sf-ca/saas/enriched_results.json
+uvx --with aiohttp --with anthropic --with python-dotenv \
+  python .claude/skills/lead-discovery/research-pipeline/company_enricher.py \
+  --input /tmp/prospects/sf-ca/saas/parsed_results.json \
+  --output /tmp/prospects/sf-ca/saas/enriched_results.json
 ```
 
 ### Step 4: Find Contacts
 ```bash
-python research-pipeline/contact_finder.py \
-  --input /prospects/sf-ca/saas/enriched_results.json \
-  --output /prospects/sf-ca/saas/with_contacts.json
+uvx --with aiohttp --with anthropic --with python-dotenv \
+  python .claude/skills/lead-discovery/research-pipeline/contact_finder.py \
+  --input /tmp/prospects/sf-ca/saas/enriched_results.json \
+  --output /tmp/prospects/sf-ca/saas/with_contacts.json
 ```
 
 ### Step 5: Validate Data
 ```bash
-python research-pipeline/data_validator.py \
-  --input /prospects/sf-ca/saas/with_contacts.json \
-  --icp /clients/<client_id>/icp.json \
-  --output /prospects/sf-ca/saas/validated.json
+uvx --with anthropic --with python-dotenv \
+  python .claude/skills/lead-discovery/research-pipeline/data_validator.py \
+  --input /tmp/prospects/sf-ca/saas/with_contacts.json \
+  --icp /tmp/clients/<client_id>/icp.json \
+  --output /tmp/prospects/sf-ca/saas/validated.json
 ```
 
 ## Output Format
