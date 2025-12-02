@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getSocket, connectSocket } from '../lib/websocket';
 import type { Socket } from 'socket.io-client';
 
@@ -120,7 +120,6 @@ export function useCampaignUpdates(campaignId: string | undefined) {
 export function useNotifications() {
   const { subscribe, isConnected } = useWebSocket();
   const [notifications, setNotifications] = useState<ListenerNotification[]>([]);
-  const notificationIdRef = useRef(0);
 
   useEffect(() => {
     if (!isConnected) return;
@@ -207,5 +206,103 @@ export function useRealTimeAnalytics() {
   }, [isConnected, subscribe]);
 
   return { metrics, isConnected };
+}
+
+// ===========================================
+// Discovery Progress Hook
+// ===========================================
+
+type DiscoveryPhase = 'analyzing_website' | 'researching_market' | 'generating_icp' | 'validating';
+type DiscoveryStatus = 'started' | 'in_progress' | 'completed' | 'failed';
+
+interface DiscoveryProgressEvent {
+  type: 'discovery_progress';
+  clientId: string;
+  phase: DiscoveryPhase;
+  status: DiscoveryStatus;
+  message?: string;
+  timestamp: string;
+}
+
+interface DiscoveryProgress {
+  currentPhase: DiscoveryPhase | null;
+  completedPhases: DiscoveryPhase[];
+  status: DiscoveryStatus | null;
+  message: string | null;
+  error: string | null;
+  isComplete: boolean;
+  isFailed: boolean;
+}
+
+export function useDiscoveryProgress(clientId: string | undefined) {
+  const { socket, isConnected, subscribe } = useWebSocket();
+  const [progress, setProgress] = useState<DiscoveryProgress>({
+    currentPhase: null,
+    completedPhases: [],
+    status: null,
+    message: null,
+    error: null,
+    isComplete: false,
+    isFailed: false,
+  });
+
+  useEffect(() => {
+    if (!socket || !clientId || !isConnected) return;
+
+    // Subscribe to client room for progress updates
+    socket.emit('subscribe_client', clientId);
+
+    const unsub = subscribe('discovery_progress', (data: unknown) => {
+      const event = data as DiscoveryProgressEvent;
+      if (event.clientId !== clientId) return;
+
+      setProgress((prev) => {
+        const completedPhases = [...prev.completedPhases];
+
+        // Add to completed phases when a phase completes
+        if (event.status === 'completed' && !completedPhases.includes(event.phase)) {
+          completedPhases.push(event.phase);
+        }
+
+        // Check if all phases completed
+        const allPhases: DiscoveryPhase[] = [
+          'analyzing_website',
+          'researching_market',
+          'generating_icp',
+          'validating',
+        ];
+        const isComplete = allPhases.every((p) => completedPhases.includes(p));
+        const isFailed = event.status === 'failed';
+
+        return {
+          currentPhase: event.status === 'completed' ? prev.currentPhase : event.phase,
+          completedPhases,
+          status: event.status,
+          message: event.message || null,
+          error: isFailed ? event.message || 'Discovery failed' : null,
+          isComplete,
+          isFailed,
+        };
+      });
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [socket, clientId, isConnected, subscribe]);
+
+  const reset = useCallback(() => {
+    setProgress({
+      currentPhase: null,
+      completedPhases: [],
+      status: null,
+      message: null,
+      error: null,
+      isComplete: false,
+      isFailed: false,
+    });
+  }, []);
+
+  return { progress, reset, isConnected };
 }
 

@@ -284,6 +284,43 @@ export const ResponseSchema = z.object({
 export type Response = z.infer<typeof ResponseSchema>;
 
 // ===========================================
+// Discovery Progress Types
+// ===========================================
+
+export const DiscoveryPhaseSchema = z.enum([
+  'analyzing_website',
+  'researching_market',
+  'generating_icp',
+  'validating',
+]);
+
+export type DiscoveryPhase = z.infer<typeof DiscoveryPhaseSchema>;
+
+export const DiscoveryStatusSchema = z.enum([
+  'started',
+  'in_progress',
+  'completed',
+  'failed',
+]);
+
+export type DiscoveryStatus = z.infer<typeof DiscoveryStatusSchema>;
+
+export const DiscoveryProgressEventSchema = z.object({
+  type: z.literal('discovery_progress'),
+  clientId: z.string(),
+  phase: DiscoveryPhaseSchema,
+  status: DiscoveryStatusSchema,
+  message: z.string().optional(),
+  timestamp: z.string().datetime(),
+  metadata: z.object({
+    durationMs: z.number().optional(),
+    error: z.string().optional(),
+  }).optional(),
+});
+
+export type DiscoveryProgressEvent = z.infer<typeof DiscoveryProgressEventSchema>;
+
+// ===========================================
 // WebSocket Event Types
 // ===========================================
 
@@ -293,7 +330,8 @@ export type WebSocketEvent =
   | { type: 'email_sent'; email: SentEmail }
   | { type: 'email_bounced'; email: SentEmail }
   | { type: 'prospect_status_change'; prospectId: string; status: Prospect['status'] }
-  | { type: 'listener_notification'; listenerId: string; priority: 'low' | 'normal' | 'high'; message: string };
+  | { type: 'listener_notification'; listenerId: string; priority: 'low' | 'normal' | 'high'; message: string }
+  | DiscoveryProgressEvent;
 
 // ===========================================
 // API Response Types

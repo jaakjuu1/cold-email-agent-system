@@ -12,9 +12,11 @@ import {
   MapPin,
   Users,
   MessageSquare,
+  XCircle,
 } from 'lucide-react';
 import { clientsApi } from '../lib/api';
 import { useAppStore } from '../store';
+import { useDiscoveryProgress } from '../hooks/useWebSocket';
 
 interface ICPData {
   icpSummary: string;
@@ -59,6 +61,33 @@ export function Onboarding() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [clientId, setClientId] = useState<string | null>(null);
   const [icpData, setIcpData] = useState<ICPData | null>(null);
+
+  // Discovery progress hook
+  const { progress, reset: resetProgress } = useDiscoveryProgress(clientId || undefined);
+
+  // Phase display configuration
+  const discoveryPhases = [
+    {
+      key: 'analyzing_website' as const,
+      label: 'Analyzing website',
+      description: 'Crawling and extracting business information',
+    },
+    {
+      key: 'researching_market' as const,
+      label: 'Researching market',
+      description: 'Analyzing market position and competitors',
+    },
+    {
+      key: 'generating_icp' as const,
+      label: 'Generating ICP',
+      description: 'Creating ideal customer profile',
+    },
+    {
+      key: 'validating' as const,
+      label: 'Validating',
+      description: 'Ensuring data quality and completeness',
+    },
+  ];
 
   const createClientMutation = useMutation({
     mutationFn: (data: { name: string; website: string }) =>
@@ -226,7 +255,7 @@ export function Onboarding() {
               </div>
             )}
 
-            {/* Step 2: Analyzing */}
+            {/* Step 2: Analyzing with real-time progress */}
             {step === 2 && (
               <div className="card p-8 text-center animate-fade-in">
                 <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-6">
@@ -236,28 +265,93 @@ export function Onboarding() {
                   Analyzing your business...
                 </h1>
                 <p className="text-surface-500 mb-8">
-                  Our AI is researching your company, market, and ideal customers.
-                  This usually takes 1-2 minutes.
+                  {progress.message || 'Our AI is researching your company, market, and ideal customers.'}
                 </p>
-                <div className="space-y-3 text-left max-w-sm mx-auto">
-                  {[
-                    'Crawling website content',
-                    'Analyzing product offerings',
-                    'Researching market position',
-                    'Generating ideal customer profile',
-                  ].map((task, i) => (
-                    <div
-                      key={task}
-                      className="flex items-center gap-3 text-sm"
-                      style={{ animationDelay: `${i * 0.2}s` }}
-                    >
-                      <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center">
-                        <Loader2 className="w-3 h-3 text-primary-600 animate-spin" />
+
+                <div className="space-y-3 text-left max-w-md mx-auto">
+                  {discoveryPhases.map((phase) => {
+                    const isCompleted = progress.completedPhases.includes(phase.key);
+                    const isActive = progress.currentPhase === phase.key && progress.status !== 'completed';
+                    const isFailed = progress.isFailed && progress.currentPhase === phase.key;
+                    // Show sub-phase message if this phase is active and we have a message
+                    const showSubPhase = isActive && progress.message && progress.status === 'in_progress';
+
+                    return (
+                      <div
+                        key={phase.key}
+                        className={`transition-opacity duration-300 ${
+                          isCompleted || isActive ? 'opacity-100' : 'opacity-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 text-sm">
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                              isCompleted
+                                ? 'bg-green-500'
+                                : isFailed
+                                ? 'bg-red-500'
+                                : isActive
+                                ? 'bg-primary-100'
+                                : 'bg-surface-200'
+                            }`}
+                          >
+                            {isCompleted ? (
+                              <CheckCircle className="w-4 h-4 text-white" />
+                            ) : isFailed ? (
+                              <XCircle className="w-4 h-4 text-white" />
+                            ) : isActive ? (
+                              <Loader2 className="w-3 h-3 text-primary-600 animate-spin" />
+                            ) : (
+                              <div className="w-2 h-2 rounded-full bg-surface-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span
+                              className={`font-medium ${
+                                isCompleted
+                                  ? 'text-green-600'
+                                  : isFailed
+                                  ? 'text-red-600'
+                                  : isActive
+                                  ? 'text-primary-600'
+                                  : 'text-surface-500'
+                              }`}
+                            >
+                              {phase.label}
+                            </span>
+                            {isActive && !showSubPhase && (
+                              <p className="text-xs text-surface-400 mt-0.5">{phase.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        {/* Sub-phase progress message */}
+                        {showSubPhase && (
+                          <div className="ml-9 mt-1.5 pl-3 border-l-2 border-primary-200">
+                            <p className="text-xs text-surface-600 font-mono truncate">
+                              {progress.message}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-surface-600">{task}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+
+                {progress.isFailed && (
+                  <div className="mt-6 p-4 bg-red-50 rounded-lg text-red-700">
+                    <p className="font-medium">Discovery failed</p>
+                    <p className="text-sm mt-1">{progress.error}</p>
+                    <button
+                      onClick={() => {
+                        resetProgress();
+                        setStep(1);
+                      }}
+                      className="mt-3 btn-secondary text-sm"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

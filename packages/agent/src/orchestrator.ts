@@ -81,6 +81,13 @@ export type BusinessProfile = z.infer<typeof BusinessProfileSchema>;
 export type ICP = z.infer<typeof ICPSchema>;
 export type ResponseClassification = z.infer<typeof ResponseClassificationSchema>;
 
+// Progress callback type for discovery operations
+export type ProgressCallback = (
+  phase: string,
+  status: string,
+  message?: string
+) => void;
+
 // ===========================================
 // Logging Utility
 // ===========================================
@@ -99,6 +106,24 @@ function log(level: 'info' | 'warn' | 'error' | 'debug', message: string, data?:
   } else {
     console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](`${prefix} ${message}`);
   }
+}
+
+// Structured JSON logging for machine-parseable output
+interface StructuredLogEntry {
+  timestamp: string;
+  level: 'info' | 'warn' | 'error' | 'debug';
+  component: string;
+  event: string;
+  clientId?: string;
+  phase?: string;
+  status?: string;
+  durationMs?: number;
+  message?: string;
+  metadata?: Record<string, unknown>;
+}
+
+function structuredLog(entry: StructuredLogEntry): void {
+  console.log(JSON.stringify(entry));
 }
 
 // ===========================================
@@ -174,6 +199,30 @@ function zodTypeToJsonSchema(zodType: z.ZodType): Record<string, unknown> {
 }
 
 /**
+ * Content block types from SDK messages
+ */
+interface TextBlock {
+  type: 'text';
+  text: string;
+}
+
+interface ToolUseBlock {
+  type: 'tool_use';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+interface ToolResultBlock {
+  type: 'tool_result';
+  tool_use_id: string;
+  content: string | unknown[];
+  is_error?: boolean;
+}
+
+type ContentBlock = TextBlock | ToolUseBlock | ToolResultBlock | { type: string; [key: string]: unknown };
+
+/**
  * Message type from the SDK's async iterator
  */
 interface SDKMessage {
@@ -181,11 +230,74 @@ interface SDKMessage {
   subtype?: string;
   structured_output?: unknown;
   message?: {
-    content?: Array<{
-      type: string;
-      text?: string;
-    }>;
+    content?: ContentBlock[];
   };
+}
+
+/**
+ * Track active tool calls for timing
+ */
+interface ActiveToolCall {
+  id: string;
+  name: string;
+  startTime: number;
+  input: Record<string, unknown>;
+}
+
+/**
+ * Format tool input for logging (truncate long values)
+ */
+function formatToolInput(toolName: string, input: Record<string, unknown>): string {
+  // Extract meaningful information based on tool type
+  switch (toolName) {
+    case 'Bash': {
+      const command = input.command as string || '';
+      // Extract the script name from bash commands
+      const scriptMatch = command.match(/python\s+([^\s]+\.py)/);
+      if (scriptMatch) {
+        return `Running: ${scriptMatch[1]}`;
+      }
+      // Truncate long commands
+      return command.length > 80 ? command.substring(0, 80) + '...' : command;
+    }
+    case 'Skill': {
+      const skill = input.skill as string || input.name as string || 'unknown';
+      return `Skill: ${skill}`;
+    }
+    case 'Read': {
+      const filePath = input.file_path as string || input.path as string || '';
+      const fileName = filePath.split('/').pop() || filePath;
+      return `Reading: ${fileName}`;
+    }
+    case 'Write': {
+      const filePath = input.file_path as string || input.path as string || '';
+      const fileName = filePath.split('/').pop() || filePath;
+      return `Writing: ${fileName}`;
+    }
+    case 'Glob': {
+      const pattern = input.pattern as string || '';
+      return `Pattern: ${pattern}`;
+    }
+    case 'Grep': {
+      const pattern = input.pattern as string || '';
+      return `Searching: ${pattern.substring(0, 50)}`;
+    }
+    case 'WebFetch': {
+      const url = input.url as string || '';
+      return `Fetching: ${url.substring(0, 60)}`;
+    }
+    default: {
+      // Generic fallback - show first key-value pair
+      const entries = Object.entries(input);
+      const firstEntry = entries[0];
+      if (firstEntry) {
+        const [key, value] = firstEntry;
+        const strValue = String(value);
+        return `${key}: ${strValue.substring(0, 50)}${strValue.length > 50 ? '...' : ''}`;
+      }
+      return '';
+    }
+  }
 }
 
 /**
@@ -197,8 +309,11 @@ function extractTextFromMessages(messages: SDKMessage[]): string {
   for (const message of messages) {
     if (message.type === 'assistant' && message.message?.content) {
       for (const block of message.message.content) {
-        if (block.type === 'text' && block.text) {
-          textParts.push(block.text);
+        if (block.type === 'text') {
+          const textBlock = block as TextBlock;
+          if (textBlock.text) {
+            textParts.push(textBlock.text);
+          }
         }
       }
     }
@@ -299,10 +414,14 @@ export class Orchestrator {
     schema: z.ZodType<T>,
     options: {
       allowBash?: boolean;
+      clientId?: string;
+      currentPhase?: string;
+      onProgress?: ProgressCallback;
     } = {}
   ): Promise<{ data: T | null; raw: string; error?: string }> {
     const messages: SDKMessage[] = [];
     let structuredOutput: unknown = null;
+    const activeToolCalls = new Map<string, ActiveToolCall>();
 
     const allowedTools = ['Skill', 'Read', 'Write', 'Glob', 'Grep'];
     if (options.allowBash) {
@@ -327,14 +446,79 @@ export class Orchestrator {
         },
       })) {
         messages.push(message as SDKMessage);
+        const sdkMessage = message as SDKMessage;
 
-        // Log message types for debugging
-        log('debug', `Received message type: ${(message as SDKMessage).type}`,
-          (message as SDKMessage).subtype ? { subtype: (message as SDKMessage).subtype } : undefined);
+        // Process assistant messages - extract tool calls
+        if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
+          for (const block of sdkMessage.message.content) {
+            if (block.type === 'tool_use') {
+              const toolBlock = block as ToolUseBlock;
+              const toolInfo = formatToolInput(toolBlock.name, toolBlock.input);
+
+              // Track this tool call for timing
+              activeToolCalls.set(toolBlock.id, {
+                id: toolBlock.id,
+                name: toolBlock.name,
+                startTime: Date.now(),
+                input: toolBlock.input,
+              });
+
+              // Log the tool invocation
+              log('info', `Tool: ${toolBlock.name}`, { detail: toolInfo });
+              structuredLog({
+                timestamp: new Date().toISOString(),
+                level: 'info',
+                component: 'Orchestrator',
+                event: 'tool_call',
+                clientId: options.clientId,
+                phase: options.currentPhase,
+                status: 'started',
+                message: `${toolBlock.name}: ${toolInfo}`,
+                metadata: { toolId: toolBlock.id, toolName: toolBlock.name },
+              });
+
+              // Emit progress event for the tool call
+              if (options.onProgress && options.currentPhase) {
+                options.onProgress(options.currentPhase, 'in_progress', `${toolBlock.name}: ${toolInfo}`);
+              }
+            }
+          }
+        }
+
+        // Process user messages (tool results)
+        if (sdkMessage.type === 'user' && sdkMessage.message?.content) {
+          for (const block of sdkMessage.message.content) {
+            if (block.type === 'tool_result') {
+              const resultBlock = block as ToolResultBlock;
+              const activeCall = activeToolCalls.get(resultBlock.tool_use_id);
+
+              if (activeCall) {
+                const durationMs = Date.now() - activeCall.startTime;
+                const status = resultBlock.is_error ? 'failed' : 'completed';
+
+                log('info', `Tool ${status}: ${activeCall.name}`, { durationMs, isError: resultBlock.is_error });
+                structuredLog({
+                  timestamp: new Date().toISOString(),
+                  level: resultBlock.is_error ? 'warn' : 'info',
+                  component: 'Orchestrator',
+                  event: 'tool_result',
+                  clientId: options.clientId,
+                  phase: options.currentPhase,
+                  status,
+                  durationMs,
+                  message: `${activeCall.name} ${status} in ${(durationMs / 1000).toFixed(1)}s`,
+                  metadata: { toolId: activeCall.id, toolName: activeCall.name, isError: resultBlock.is_error },
+                });
+
+                activeToolCalls.delete(resultBlock.tool_use_id);
+              }
+            }
+          }
+        }
 
         // Check for structured output in result messages
-        if ((message as SDKMessage).type === 'result') {
-          structuredOutput = (message as SDKMessage).structured_output;
+        if (sdkMessage.type === 'result') {
+          structuredOutput = sdkMessage.structured_output;
           if (structuredOutput) {
             log('info', 'Received structured output from SDK');
           }
@@ -451,8 +635,26 @@ export class Orchestrator {
   /**
    * Analyze a website and generate business profile using the client-discovery skill
    */
-  async analyzeWebsite(clientId: string, websiteUrl: string): Promise<BusinessProfile | { raw: string }> {
+  async analyzeWebsite(
+    clientId: string,
+    websiteUrl: string,
+    onProgress?: ProgressCallback
+  ): Promise<BusinessProfile | { raw: string }> {
+    const phaseStartTime = Date.now();
     log('info', `Starting website analysis for client ${clientId}`, { websiteUrl });
+
+    // Emit progress: started
+    onProgress?.('analyzing_website', 'started', 'Crawling and analyzing website content');
+    structuredLog({
+      timestamp: new Date().toISOString(),
+      level: 'info',
+      component: 'Orchestrator',
+      event: 'discovery_progress',
+      clientId,
+      phase: 'analyzing_website',
+      status: 'started',
+      message: `Analyzing website: ${websiteUrl}`,
+    });
 
     const storage = await this.getStorage(clientId);
     const startTime = Date.now() / 1000;
@@ -472,8 +674,14 @@ Follow the skill workflow to:
 
 Return a comprehensive business profile based on your analysis.`;
 
-    const result = await this.runStructuredQuery(prompt, BusinessProfileSchema, { allowBash: true });
+    const result = await this.runStructuredQuery(prompt, BusinessProfileSchema, {
+      allowBash: true,
+      clientId,
+      currentPhase: 'analyzing_website',
+      onProgress,
+    });
     const endTime = Date.now() / 1000;
+    const durationMs = Date.now() - phaseStartTime;
 
     // Record the tool call
     await storage.recordToolCall(
@@ -486,18 +694,61 @@ Return a comprehensive business profile based on your analysis.`;
 
     if (result.data) {
       log('info', 'Website analysis completed successfully', { company: result.data.company_name });
+      onProgress?.('analyzing_website', 'completed', 'Website analysis complete');
+      structuredLog({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        component: 'Orchestrator',
+        event: 'discovery_progress',
+        clientId,
+        phase: 'analyzing_website',
+        status: 'completed',
+        durationMs,
+        message: 'Website analysis completed successfully',
+      });
       return result.data;
     }
 
     log('warn', 'Website analysis returned raw text only', { error: result.error });
+    onProgress?.('analyzing_website', 'completed', 'Website analysis complete (partial)');
+    structuredLog({
+      timestamp: new Date().toISOString(),
+      level: 'warn',
+      component: 'Orchestrator',
+      event: 'discovery_progress',
+      clientId,
+      phase: 'analyzing_website',
+      status: 'completed',
+      durationMs,
+      message: 'Website analysis returned raw text only',
+      metadata: { error: result.error },
+    });
     return { raw: result.raw };
   }
 
   /**
    * Generate ICP from business profile using the client-discovery skill
    */
-  async generateICP(clientId: string, businessProfile: unknown): Promise<ICP | { raw: string }> {
+  async generateICP(
+    clientId: string,
+    businessProfile: unknown,
+    onProgress?: ProgressCallback
+  ): Promise<ICP | { raw: string }> {
+    const phaseStartTime = Date.now();
     log('info', `Generating ICP for client ${clientId}`);
+
+    // Emit progress: started
+    onProgress?.('generating_icp', 'started', 'Creating ideal customer profile');
+    structuredLog({
+      timestamp: new Date().toISOString(),
+      level: 'info',
+      component: 'Orchestrator',
+      event: 'discovery_progress',
+      clientId,
+      phase: 'generating_icp',
+      status: 'started',
+      message: 'Starting ICP generation',
+    });
 
     const storage = await this.getStorage(clientId);
     const startTime = Date.now() / 1000;
@@ -518,8 +769,14 @@ Follow the skill workflow to:
 
 Generate a detailed ICP with firmographic criteria, geographic targeting, industry targeting, decision maker targeting, and messaging framework.`;
 
-    const result = await this.runStructuredQuery(prompt, ICPSchema, { allowBash: true });
+    const result = await this.runStructuredQuery(prompt, ICPSchema, {
+      allowBash: true,
+      clientId,
+      currentPhase: 'generating_icp',
+      onProgress,
+    });
     const endTime = Date.now() / 1000;
+    const durationMs = Date.now() - phaseStartTime;
 
     await storage.recordToolCall(
       'generate_icp',
@@ -530,12 +787,63 @@ Generate a detailed ICP with firmographic criteria, geographic targeting, indust
     );
 
     if (result.data) {
+      // Emit validation phase
+      onProgress?.('validating', 'started', 'Validating ICP data');
+      structuredLog({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        component: 'Orchestrator',
+        event: 'discovery_progress',
+        clientId,
+        phase: 'validating',
+        status: 'started',
+        message: 'Starting ICP validation',
+      });
+
       log('info', 'ICP generation completed successfully');
       await storage.saveICP(result.data);
+
+      onProgress?.('validating', 'completed', 'ICP validation complete');
+      structuredLog({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        component: 'Orchestrator',
+        event: 'discovery_progress',
+        clientId,
+        phase: 'validating',
+        status: 'completed',
+        message: 'ICP validation completed',
+      });
+
+      onProgress?.('generating_icp', 'completed', 'ICP generated successfully');
+      structuredLog({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        component: 'Orchestrator',
+        event: 'discovery_progress',
+        clientId,
+        phase: 'generating_icp',
+        status: 'completed',
+        durationMs,
+        message: 'ICP generation completed successfully',
+      });
       return result.data;
     }
 
     log('warn', 'ICP generation returned raw text only', { error: result.error });
+    onProgress?.('generating_icp', 'completed', 'ICP generation complete (partial)');
+    structuredLog({
+      timestamp: new Date().toISOString(),
+      level: 'warn',
+      component: 'Orchestrator',
+      event: 'discovery_progress',
+      clientId,
+      phase: 'generating_icp',
+      status: 'completed',
+      durationMs,
+      message: 'ICP generation returned raw text only',
+      metadata: { error: result.error },
+    });
     return { raw: result.raw };
   }
 

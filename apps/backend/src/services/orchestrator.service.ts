@@ -7,8 +7,17 @@ import type {
   CreateCampaignInput,
   Prospect,
   SentEmail,
+  DiscoveryPhase,
+  DiscoveryStatus,
 } from '@cold-outreach/shared';
 import { timestamp } from '@cold-outreach/shared';
+
+// Progress callback type for discovery operations
+export type DiscoveryProgressCallback = (
+  phase: DiscoveryPhase,
+  status: DiscoveryStatus,
+  message?: string
+) => void;
 import { Orchestrator } from '@cold-outreach/agent';
 
 // In-memory storage for MVP (replace with AgentFS in production)
@@ -85,34 +94,99 @@ export class OrchestratorService {
     icps.delete(id);
   }
 
-  async discoverClient(clientId: string, websiteUrl: string): Promise<ICP> {
+  async discoverClient(
+    clientId: string,
+    websiteUrl: string,
+    onProgress?: DiscoveryProgressCallback
+  ): Promise<ICP> {
     const id = `icp-${nanoid(10)}`;
     const now = timestamp();
-    
+
     // Check if we have an API key configured
     const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
-    
+
     let icpData: Record<string, unknown>;
-    
+
     if (hasApiKey) {
       try {
-        // Step 1: Analyze the website using Claude
+        // Phase 1: Analyzing Website
+        onProgress?.('analyzing_website', 'started', 'Crawling and analyzing website content');
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'info',
+          component: 'OrchestratorService',
+          event: 'discovery_progress',
+          clientId,
+          phase: 'analyzing_website',
+          status: 'started',
+        }));
         console.log(`[AI] Analyzing website: ${websiteUrl}`);
+
         const orchestrator = getAIOrchestrator();
         const businessProfile = await orchestrator.analyzeWebsite(clientId, websiteUrl);
+
+        onProgress?.('analyzing_website', 'completed', 'Website analysis complete');
         console.log('[AI] Business profile generated');
-        
-        // Step 2: Generate ICP from business profile
+
+        // Phase 2: Researching Market
+        onProgress?.('researching_market', 'started', 'Researching market position and competitors');
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'info',
+          component: 'OrchestratorService',
+          event: 'discovery_progress',
+          clientId,
+          phase: 'researching_market',
+          status: 'started',
+        }));
+        // Market research happens within website analysis, but we show it as separate phase for UX
+        onProgress?.('researching_market', 'completed', 'Market research complete');
+
+        // Phase 3: Generating ICP
+        onProgress?.('generating_icp', 'started', 'Creating ideal customer profile');
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'info',
+          component: 'OrchestratorService',
+          event: 'discovery_progress',
+          clientId,
+          phase: 'generating_icp',
+          status: 'started',
+        }));
         console.log('[AI] Generating ICP from business profile');
+
         icpData = await orchestrator.generateICP(clientId, businessProfile) as Record<string, unknown>;
+
+        onProgress?.('generating_icp', 'completed', 'ICP generated');
         console.log('[AI] ICP generated successfully');
+
       } catch (error) {
         console.error('[AI] Error during discovery:', error);
+        onProgress?.('generating_icp', 'failed', `Discovery failed: ${error instanceof Error ? error.message : String(error)}`);
+        console.log(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'error',
+          component: 'OrchestratorService',
+          event: 'discovery_failed',
+          clientId,
+          error: error instanceof Error ? error.message : String(error),
+        }));
         // Fall back to mock data if AI fails
         icpData = this.getMockICPData(websiteUrl);
       }
     } else {
       console.warn('[AI] No ANTHROPIC_API_KEY configured, using mock data');
+      // Simulate rapid progress for mock data
+      const mockPhases: Array<[DiscoveryPhase, string]> = [
+        ['analyzing_website', 'Analyzing website (mock)'],
+        ['researching_market', 'Researching market (mock)'],
+        ['generating_icp', 'Generating ICP (mock)'],
+        ['validating', 'Validating (mock)'],
+      ];
+      for (const [phase, message] of mockPhases) {
+        onProgress?.(phase, 'started', message);
+        onProgress?.(phase, 'completed', `${message} complete`);
+      }
       icpData = this.getMockICPData(websiteUrl);
     }
     

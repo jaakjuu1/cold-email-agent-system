@@ -173,7 +173,7 @@ importers:
     dependencies:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.53
-        version: 0.1.53(zod@3.25.76)
+        version: 0.1.56(zod@3.25.76)
       '@cold-outreach/shared':
         specifier: workspace:*
         version: link:../shared
@@ -216,8 +216,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@anthropic-ai/claude-agent-sdk@0.1.53':
-    resolution: {integrity: sha512-k8qsWx2Ey3Y1qNdarS9VFFaJk+H+lEmH6AWtBbDRwQkYcdlltjZPZ8IJ71Eo683oNbwQMeepmJ4AAYMmK8EH0g==}
+  '@anthropic-ai/claude-agent-sdk@0.1.56':
+    resolution: {integrity: sha512-r4IAJ3Wht2iTyS3qoDYbCEbkTNXM2W33DEt9q5tkDDD9UR0dU5U7qLPwA8TTTX4wyHkZic5a0jLDuD7xU3ZrZg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: ^3.24.1
@@ -3099,7 +3099,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@anthropic-ai/claude-agent-sdk@0.1.53(zod@3.25.76)':
+  '@anthropic-ai/claude-agent-sdk@0.1.56(zod@3.25.76)':
     dependencies:
       zod: 3.25.76
     optionalDependencies:
