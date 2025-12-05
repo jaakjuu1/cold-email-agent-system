@@ -10,12 +10,23 @@ import {
   Bell,
   Building2,
   Plus,
-  LogOut,
   ChevronDown,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { useAppStore } from '../store';
+import { clientsApi } from '../lib/api';
+import { safeGetHostname } from '../lib/url';
+import { Toast } from './Toast';
+
+interface ClientListItem {
+  id: string;
+  name: string;
+  website: string;
+}
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -33,9 +44,27 @@ export function Layout() {
   const currentClient = useAppStore((state) => state.currentClient);
   const setCurrentClient = useAppStore((state) => state.setCurrentClient);
 
-  const handleSwitchClient = () => {
-    setCurrentClient(null);
-    navigate('/onboarding');
+  // Fetch list of all clients
+  const { data: clientsResponse, isLoading: isLoadingClients } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => clientsApi.list(),
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  const clients: ClientListItem[] = clientsResponse?.data?.data || [];
+
+  const handleAddNewClient = () => {
+    // Navigate to onboarding with state indicating we're adding a new client
+    navigate('/onboarding', { state: { addingNewClient: true } });
+  };
+
+  const handleSelectClient = (client: ClientListItem) => {
+    setCurrentClient({
+      id: client.id,
+      name: client.name,
+      website: client.website,
+    });
+    setClientMenuOpen(false);
   };
 
   return (
@@ -105,7 +134,7 @@ export function Layout() {
                     {currentClient?.name || 'No Client'}
                   </p>
                   <p className="text-xs text-surface-500 truncate">
-                    {currentClient?.website ? new URL(currentClient.website).hostname : 'Select a client'}
+                    {currentClient?.website ? safeGetHostname(currentClient.website) || 'Invalid URL' : 'Select a client'}
                   </p>
                 </div>
                 <ChevronDown className={clsx(
@@ -116,28 +145,81 @@ export function Layout() {
 
               {/* Client dropdown menu */}
               {clientMenuOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-surface-200 overflow-hidden">
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-surface-200 overflow-hidden max-h-80 flex flex-col">
+                  {/* Add New Client button */}
                   <button
                     onClick={() => {
                       setClientMenuOpen(false);
-                      handleSwitchClient();
+                      handleAddNewClient();
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors text-left"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors text-left flex-shrink-0"
                   >
                     <Plus className="w-4 h-4 text-primary-600" />
                     <span className="text-sm font-medium text-surface-700">Add New Client</span>
                   </button>
-                  <div className="border-t border-surface-100" />
-                  <button
-                    onClick={() => {
-                      setClientMenuOpen(false);
-                      handleSwitchClient();
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-left"
-                  >
-                    <LogOut className="w-4 h-4 text-red-500" />
-                    <span className="text-sm font-medium text-red-600">Switch Client</span>
-                  </button>
+
+                  {/* Client list */}
+                  {clients.length > 0 && (
+                    <>
+                      <div className="border-t border-surface-100" />
+                      <div className="overflow-y-auto flex-1">
+                        <div className="px-3 py-2">
+                          <p className="text-xs font-medium text-surface-400 uppercase tracking-wider">Your Clients</p>
+                        </div>
+                        {clients.map((client) => {
+                          const isSelected = currentClient?.id === client.id;
+                          return (
+                            <button
+                              key={client.id}
+                              onClick={() => handleSelectClient(client)}
+                              className={clsx(
+                                'w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-left',
+                                isSelected
+                                  ? 'bg-primary-50 text-primary-700'
+                                  : 'hover:bg-surface-50 text-surface-700'
+                              )}
+                            >
+                              <Building2 className={clsx(
+                                'w-4 h-4 flex-shrink-0',
+                                isSelected ? 'text-primary-600' : 'text-surface-400'
+                              )} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{client.name}</p>
+                                <p className="text-xs text-surface-500 truncate">
+                                  {client.website ? safeGetHostname(client.website) || 'Invalid URL' : 'No website'}
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <Check className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Loading state */}
+                  {isLoadingClients && (
+                    <>
+                      <div className="border-t border-surface-100" />
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 text-surface-500">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Loading clients...</span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Empty state */}
+                  {!isLoadingClients && clients.length === 0 && (
+                    <>
+                      <div className="border-t border-surface-100" />
+                      <div className="px-4 py-3 text-center">
+                        <p className="text-sm text-surface-500">No clients yet</p>
+                        <p className="text-xs text-surface-400">Create your first client above</p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -173,6 +255,9 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Toast notifications */}
+      <Toast />
     </div>
   );
 }

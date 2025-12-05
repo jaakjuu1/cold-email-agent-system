@@ -46,5 +46,11 @@ router.get('/:id/emails', controller.getEmails);
 // Generate emails for campaign (using AI)
 router.post('/:id/generate-emails', controller.generateEmails);
 
+// Generate AI-powered personalized emails (new)
+router.post('/generate-ai-emails', controller.generateAIEmails);
+
+// Validate placeholders for templates against prospects
+router.post('/validate-placeholders', controller.validatePlaceholders);
+
 export default router;
 

@@ -174,10 +174,87 @@ export class CampaignController {
     try {
       const { id } = req.params;
       await orchestrator.generateCampaignEmails(id);
-      
+
       res.json({
         success: true,
         message: 'Email generation started',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Generate AI-powered personalized emails
+   * POST /api/campaigns/generate-ai-emails
+   */
+  async generateAIEmails(req: Request, res: Response, next: NextFunction) {
+    try {
+      const {
+        clientId,
+        mode,
+        prospects,
+        sequenceCount,
+        generalInstructions,
+        templateInstructions,
+        regenerateWithAngle,
+      } = req.body;
+
+      if (!clientId) {
+        throw new AppError('Client ID is required', 400);
+      }
+
+      if (!mode || !['template', 'personalized'].includes(mode)) {
+        throw new AppError('Mode must be "template" or "personalized"', 400);
+      }
+
+      if (mode === 'personalized' && (!prospects || prospects.length === 0)) {
+        throw new AppError('Prospects are required for personalized mode', 400);
+      }
+
+      const result = await orchestrator.generatePersonalizedEmails({
+        clientId,
+        mode,
+        prospects,
+        sequenceCount: sequenceCount || 3,
+        generalInstructions,
+        templateInstructions,
+        regenerateWithAngle,
+      });
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Validate placeholders for templates against prospects
+   * POST /api/campaigns/validate-placeholders
+   */
+  async validatePlaceholders(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { templates, prospects } = req.body;
+
+      if (!templates || !Array.isArray(templates) || templates.length === 0) {
+        throw new AppError('Templates array is required', 400);
+      }
+
+      if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
+        throw new AppError('Prospects array is required', 400);
+      }
+
+      const result = await orchestrator.validatePlaceholders({
+        templates,
+        prospects,
+      });
+
+      res.json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

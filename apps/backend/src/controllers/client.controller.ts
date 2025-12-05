@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { OrchestratorService } from '../services/orchestrator.service.js';
 import { AppError } from '../middleware/error.middleware.js';
-import type { CreateClientInput, DiscoveryPhase, DiscoveryStatus, DiscoveryProgressEvent } from '@cold-outreach/shared';
+import type { CreateClientInput, DiscoveryPhase, DiscoveryStatus, DiscoveryProgressEvent, CreateEmailSettingsInput, UpdateEmailSettingsInput } from '@cold-outreach/shared';
 import { broadcastToClient } from '../websocket/server.js';
 
 const orchestrator = new OrchestratorService();
@@ -37,12 +37,17 @@ export class ClientController {
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const client = await orchestrator.getClient(id);
-      
+      if (!id) {
+        throw new AppError('Client ID is required', 400);
+      }
+
+      // Get client and auto-populate from discovery data if fields are missing
+      const client = await orchestrator.populateClientFromDiscovery(id);
+
       if (!client) {
         throw new AppError('Client not found', 404);
       }
-      
+
       res.json({
         success: true,
         data: client,
@@ -55,8 +60,11 @@ export class ClientController {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      if (!id) {
+        throw new AppError('Client ID is required', 400);
+      }
       const client = await orchestrator.updateClient(id, req.body);
-      
+
       res.json({
         success: true,
         data: client,
@@ -82,7 +90,7 @@ export class ClientController {
 
   async discoverBusiness(req: Request, res: Response, next: NextFunction) {
     const { id } = req.params;
-    const { websiteUrl } = req.body;
+    const { websiteUrl, additionalPrompt } = req.body;
 
     if (!id) {
       return next(new AppError('Client ID is required', 400));
@@ -122,8 +130,8 @@ export class ClientController {
         }));
       };
 
-      // Trigger discovery with progress callback
-      const icp = await orchestrator.discoverClient(clientId, websiteUrl, onProgress);
+      // Trigger discovery with progress callback and optional additional prompt
+      const icp = await orchestrator.discoverClient(clientId, websiteUrl, onProgress, additionalPrompt);
 
       res.json({
         success: true,
@@ -195,11 +203,94 @@ export class ClientController {
     try {
       const { id } = req.params;
       const icp = await orchestrator.approveClientICP(id);
-      
+
       res.json({
         success: true,
         data: icp,
         message: 'ICP approved successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getEmailSettings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        throw new AppError('Client ID is required', 400);
+      }
+      const settings = await orchestrator.getEmailSettings(id);
+
+      res.json({
+        success: true,
+        data: settings || null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createEmailSettings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        throw new AppError('Client ID is required', 400);
+      }
+      const input: Omit<CreateEmailSettingsInput, 'clientId'> = req.body;
+
+      // Check if settings already exist
+      const existing = await orchestrator.getEmailSettings(id);
+      if (existing) {
+        throw new AppError('Email settings already exist for this client. Use PUT to update.', 400);
+      }
+
+      const settings = await orchestrator.createEmailSettings({
+        ...input,
+        clientId: id,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: settings,
+        message: 'Email settings created successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateEmailSettings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        throw new AppError('Client ID is required', 400);
+      }
+      const updates: UpdateEmailSettingsInput = req.body;
+
+      const settings = await orchestrator.updateEmailSettings(id, updates);
+
+      res.json({
+        success: true,
+        data: settings,
+        message: 'Email settings updated successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteEmailSettings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        throw new AppError('Client ID is required', 400);
+      }
+      await orchestrator.deleteEmailSettings(id);
+
+      res.json({
+        success: true,
+        message: 'Email settings deleted successfully',
       });
     } catch (error) {
       next(error);

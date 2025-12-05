@@ -129,12 +129,66 @@ export class ProspectController {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      
+
       const prospect = await orchestrator.updateProspectStatus(id, status);
-      
+
       res.json({
         success: true,
         data: prospect,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deepResearch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { phases, depth, breadth, focus } = req.body;
+
+      console.log(`[DeepResearch] Received phases from frontend:`, phases);
+      console.log(`[DeepResearch] Request body:`, req.body);
+
+      // Build config from request body
+      const config = {
+        phases: phases || ['company', 'contacts', 'contact_discovery', 'market'],
+        depth: depth ?? 2,
+        breadth: breadth ?? 3,
+        focus: focus || 'sales',
+      };
+
+      console.log(`[DeepResearch] Final config phases:`, config.phases);
+
+      const result = await orchestrator.startDeepResearch(id, config);
+
+      res.json({
+        success: true,
+        data: result,
+        message: 'Deep research started',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getDeepResearch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+
+      const result = await orchestrator.getDeepResearchResults(id);
+
+      if (!result) {
+        res.json({
+          success: true,
+          data: null,
+          message: 'No deep research results available',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

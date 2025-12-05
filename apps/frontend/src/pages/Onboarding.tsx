@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Zap,
   Globe,
@@ -55,6 +55,7 @@ interface ICPData {
 
 export function Onboarding() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const setCurrentClient = useAppStore((state) => state.setCurrentClient);
   const [step, setStep] = useState(1);
   const [clientName, setClientName] = useState('');
@@ -114,6 +115,9 @@ export function Onboarding() {
   const approveMutation = useMutation({
     mutationFn: (id: string) => clientsApi.approveICP(id),
     onSuccess: () => {
+      // Invalidate clients list so it refreshes with the new client
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+
       if (clientId) {
         setCurrentClient({
           id: clientId,

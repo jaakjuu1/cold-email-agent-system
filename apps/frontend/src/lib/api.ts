@@ -39,19 +39,100 @@ export const clientsApi = {
   update: (id: string, data: Partial<{ name: string; website: string }>) =>
     api.put(`/clients/${id}`, data),
   delete: (id: string) => api.delete(`/clients/${id}`),
-  discover: (id: string, websiteUrl: string) =>
-    api.post(`/clients/${id}/discover`, { websiteUrl }),
+  discover: (id: string, websiteUrl: string, additionalPrompt?: string) =>
+    api.post(`/clients/${id}/discover`, { websiteUrl, additionalPrompt }),
   getICP: (id: string) => api.get(`/clients/${id}/icp`),
   updateICP: (id: string, data: unknown) => api.put(`/clients/${id}/icp`, data),
   approveICP: (id: string) => api.post(`/clients/${id}/icp/approve`),
+  // Email settings
+  getEmailSettings: (id: string) => api.get(`/clients/${id}/email-settings`),
+  createEmailSettings: (id: string, data: {
+    provider: 'resend' | 'sendgrid' | 'smtp' | 'mailgun';
+    fromEmail: string;
+    fromName: string;
+    replyToEmail?: string;
+    apiKey?: string;
+    smtpConfig?: {
+      host: string;
+      port: number;
+      secure: boolean;
+      username: string;
+      password: string;
+    };
+    imapConfig?: {
+      host: string;
+      port: number;
+      secure: boolean;
+      username: string;
+      password: string;
+      mailbox?: string;
+      pollIntervalSeconds?: number;
+    };
+    dailySendLimit?: number;
+    hourlySendLimit?: number;
+    minDelaySeconds?: number;
+    signature?: string;
+    trackOpens?: boolean;
+    trackClicks?: boolean;
+  }) => api.post(`/clients/${id}/email-settings`, data),
+  updateEmailSettings: (id: string, data: {
+    provider?: 'resend' | 'sendgrid' | 'smtp' | 'mailgun';
+    fromEmail?: string;
+    fromName?: string;
+    replyToEmail?: string;
+    apiKey?: string;
+    smtpConfig?: {
+      host: string;
+      port: number;
+      secure: boolean;
+      username: string;
+      password: string;
+    };
+    imapConfig?: {
+      host: string;
+      port: number;
+      secure: boolean;
+      username: string;
+      password: string;
+      mailbox?: string;
+      pollIntervalSeconds?: number;
+    };
+    dailySendLimit?: number;
+    hourlySendLimit?: number;
+    minDelaySeconds?: number;
+    signature?: string;
+    trackOpens?: boolean;
+    trackClicks?: boolean;
+  }) => api.put(`/clients/${id}/email-settings`, data),
+  deleteEmailSettings: (id: string) => api.delete(`/clients/${id}/email-settings`),
 };
 
 export const campaignsApi = {
   list: (params?: { clientId?: string; status?: string }) =>
     api.get('/campaigns', { params }),
   get: (id: string) => api.get(`/campaigns/${id}`),
-  create: (data: { clientId: string; name: string; prospectIds: string[] }) =>
-    api.post('/campaigns', data),
+  create: (data: {
+    clientId: string;
+    name: string;
+    description?: string;
+    prospectIds: string[];
+    contactSelections?: Record<string, string>; // Which contact to email per prospect
+    emailTemplates?: Array<{
+      id: string;
+      sequence: number;
+      subject: string;
+      body: string;
+      bodyHtml: string;
+      delayDays: number;
+    }>;
+    settings?: {
+      dailySendLimit?: number;
+      sendWindowStart?: string;
+      sendWindowEnd?: string;
+      timezone?: string;
+      skipWeekends?: boolean;
+    };
+  }) => api.post('/campaigns', data),
   update: (id: string, data: unknown) => api.put(`/campaigns/${id}`, data),
   delete: (id: string) => api.delete(`/campaigns/${id}`),
   start: (id: string) => api.post(`/campaigns/${id}/start`),
@@ -61,6 +142,21 @@ export const campaignsApi = {
   getProspects: (id: string) => api.get(`/campaigns/${id}/prospects`),
   getEmails: (id: string) => api.get(`/campaigns/${id}/emails`),
   generateEmails: (id: string) => api.post(`/campaigns/${id}/generate-emails`),
+  generateAIEmails: (params: {
+    clientId: string;
+    mode: 'template' | 'personalized';
+    prospects?: Array<{ prospectId: string; contactId: string }>;
+    sequenceCount?: number;
+    generalInstructions?: string;
+    templateInstructions?: Array<{ sequenceNumber: number; instructions: string }>;
+    regenerateWithAngle?: string;
+  }) => api.post('/campaigns/generate-ai-emails', params),
+
+  // Validate placeholders for templates against prospects
+  validatePlaceholders: (params: {
+    templates: Array<{ subject: string; body: string }>;
+    prospects: Array<{ prospectId: string; contactId?: string }>;
+  }) => api.post('/campaigns/validate-placeholders', params),
 };
 
 export const prospectsApi = {
@@ -86,6 +182,13 @@ export const prospectsApi = {
   getTracking: (id: string) => api.get(`/prospects/${id}/tracking`),
   updateStatus: (id: string, status: string) =>
     api.put(`/prospects/${id}/status`, { status }),
+  deepResearch: (id: string, config?: {
+    phases?: ('company' | 'contacts' | 'contact_discovery' | 'market')[];
+    depth?: number;
+    breadth?: number;
+    focus?: 'sales' | 'general' | 'technical';
+  }) => api.post(`/prospects/${id}/deep-research`, config || {}),
+  getDeepResearch: (id: string) => api.get(`/prospects/${id}/deep-research`),
 };
 
 export const analyticsApi = {

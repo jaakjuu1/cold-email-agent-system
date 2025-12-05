@@ -1,7 +1,12 @@
 import { Resend } from 'resend';
 import { nanoid } from 'nanoid';
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 import type { SentEmail, EmailTemplate, Prospect } from '@cold-outreach/shared';
 import { timestamp } from '@cold-outreach/shared';
+
+// Transport type for email sending
+type TransportType = 'resend' | 'smtp' | 'simulation';
 
 // Rate limiting configuration
 interface RateLimitConfig {
@@ -23,6 +28,23 @@ interface SendEmailOptions {
   replyTo?: string;
 }
 
+// Client-specific email configuration (from database)
+export interface ClientEmailConfig {
+  provider: 'resend' | 'sendgrid' | 'smtp' | 'mailgun';
+  fromEmail: string;
+  fromName: string;
+  replyToEmail?: string;
+  apiKey?: string;
+  smtpConfig?: {
+    host: string;
+    port: number;
+    secure: boolean;
+    username: string;
+    password: string;
+  };
+  signature?: string;
+}
+
 interface SendResult {
   success: boolean;
   messageId?: string;
@@ -38,6 +60,8 @@ interface QueuedEmail {
 
 export class EmailService {
   private resend: Resend | null = null;
+  private smtpTransport: Transporter | null = null;
+  private transportType: TransportType = 'simulation';
   private sentThisHour = 0;
   private sentToday = 0;
   private hourResetTime = Date.now() + 3600000;
@@ -55,13 +79,40 @@ export class EmailService {
   private fromName: string;
 
   constructor() {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (apiKey) {
-      this.resend = new Resend(apiKey);
-    }
-    
     this.fromEmail = process.env.EMAIL_FROM || 'outreach@yourdomain.com';
     this.fromName = process.env.EMAIL_FROM_NAME || 'Outreach';
+
+    // Try to configure Resend first
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      this.resend = new Resend(resendApiKey);
+      this.transportType = 'resend';
+      console.log('[EmailService] Configured with Resend transport');
+    }
+    // Fall back to SMTP if Resend not configured
+    else if (process.env.SMTP_HOST) {
+      this.smtpTransport = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
+        },
+      });
+      this.transportType = 'smtp';
+      console.log('[EmailService] Configured with SMTP transport');
+    } else {
+      this.transportType = 'simulation';
+      console.log('[EmailService] No email transport configured, using simulation mode');
+    }
+  }
+
+  /**
+   * Get the current transport type
+   */
+  getTransportType(): TransportType {
+    return this.transportType;
   }
 
   /**
@@ -115,7 +166,7 @@ export class EmailService {
    */
   async sendEmail(options: SendEmailOptions): Promise<SendResult> {
     const canSendResult = this.canSend();
-    
+
     if (!canSendResult.allowed) {
       return {
         success: false,
@@ -123,9 +174,188 @@ export class EmailService {
       };
     }
 
+    // Route to appropriate transport
+    switch (this.transportType) {
+      case 'resend':
+        return this.sendViaResend(options);
+      case 'smtp':
+        return this.sendViaSMTP(options);
+      case 'simulation':
+      default:
+        console.log('[EmailService] Simulating send:', options.to);
+        return this.simulateSend(options);
+    }
+  }
+
+  /**
+   * Send email using client-specific configuration (from database)
+   * This method creates a dynamic transport based on the client's email settings
+   */
+  async sendWithClientConfig(
+    options: SendEmailOptions,
+    clientConfig: ClientEmailConfig
+  ): Promise<SendResult> {
+    const canSendResult = this.canSend();
+
+    if (!canSendResult.allowed) {
+      return {
+        success: false,
+        error: canSendResult.reason,
+      };
+    }
+
+    const from = `${clientConfig.fromName} <${clientConfig.fromEmail}>`;
+    const replyTo = options.replyTo || clientConfig.replyToEmail;
+
+    // Append signature if configured
+    let html = options.html;
+    let text = options.text;
+    if (clientConfig.signature) {
+      html = `${html}<br><br>${clientConfig.signature}`;
+      text = text ? `${text}\n\n${clientConfig.signature}` : undefined;
+    }
+
+    // Route based on client's configured provider
+    switch (clientConfig.provider) {
+      case 'resend':
+        return this.sendViaResendWithConfig(options, from, replyTo, html, text, clientConfig.apiKey);
+      case 'smtp':
+        return this.sendViaSMTPWithConfig(options, from, replyTo, html, text, clientConfig.smtpConfig);
+      case 'sendgrid':
+      case 'mailgun':
+        // These could be implemented similarly if needed
+        console.log(`[EmailService] Provider ${clientConfig.provider} not implemented, using simulation`);
+        return this.simulateSend(options);
+      default:
+        console.log('[EmailService] No valid provider, simulating send');
+        return this.simulateSend(options);
+    }
+  }
+
+  /**
+   * Send via Resend with client-specific API key
+   */
+  private async sendViaResendWithConfig(
+    options: SendEmailOptions,
+    from: string,
+    replyTo: string | undefined,
+    html: string,
+    text: string | undefined,
+    apiKey?: string
+  ): Promise<SendResult> {
+    if (!apiKey) {
+      return { success: false, error: 'Resend API key not configured for this client' };
+    }
+
+    try {
+      // Create a new Resend instance with client's API key
+      const clientResend = new Resend(apiKey);
+
+      const result = await clientResend.emails.send({
+        from,
+        to: options.to,
+        subject: options.subject,
+        html,
+        text,
+        replyTo,
+        headers: {
+          'X-Campaign-ID': options.metadata.campaignId,
+          'X-Prospect-ID': options.metadata.prospectId,
+          'X-Sequence-Number': options.metadata.sequenceNumber.toString(),
+        },
+      });
+
+      this.sentThisHour++;
+      this.sentToday++;
+
+      if (result.error) {
+        return {
+          success: false,
+          error: result.error.message,
+        };
+      }
+
+      console.log(`[EmailService] Sent via Resend to ${options.to} (client config)`);
+      return {
+        success: true,
+        messageId: result.data?.id,
+      };
+    } catch (error) {
+      console.error('[EmailService] Resend (client config) failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Send via SMTP with client-specific configuration
+   */
+  private async sendViaSMTPWithConfig(
+    options: SendEmailOptions,
+    from: string,
+    replyTo: string | undefined,
+    html: string,
+    text: string | undefined,
+    smtpConfig?: ClientEmailConfig['smtpConfig']
+  ): Promise<SendResult> {
+    if (!smtpConfig) {
+      return { success: false, error: 'SMTP configuration not provided for this client' };
+    }
+
+    try {
+      // Create a dynamic transport with client's SMTP settings
+      const transport = nodemailer.createTransport({
+        host: smtpConfig.host,
+        port: smtpConfig.port,
+        secure: smtpConfig.secure,
+        auth: {
+          user: smtpConfig.username,
+          pass: smtpConfig.password,
+        },
+      });
+
+      const info = await transport.sendMail({
+        from,
+        to: options.to,
+        subject: options.subject,
+        html,
+        text,
+        replyTo,
+        headers: {
+          'X-Campaign-ID': options.metadata.campaignId,
+          'X-Prospect-ID': options.metadata.prospectId,
+          'X-Sequence-Number': options.metadata.sequenceNumber.toString(),
+        },
+      });
+
+      // Close the transport after sending
+      transport.close();
+
+      this.sentThisHour++;
+      this.sentToday++;
+
+      console.log(`[EmailService] Sent via SMTP to ${options.to} (client config: ${smtpConfig.host})`);
+      return {
+        success: true,
+        messageId: info.messageId,
+      };
+    } catch (error) {
+      console.error('[EmailService] SMTP (client config) failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Send email via Resend API
+   */
+  private async sendViaResend(options: SendEmailOptions): Promise<SendResult> {
     if (!this.resend) {
-      console.log('[EmailService] Resend not configured, simulating send:', options.to);
-      return this.simulateSend(options);
+      return { success: false, error: 'Resend not configured' };
     }
 
     try {
@@ -135,7 +365,7 @@ export class EmailService {
         subject: options.subject,
         html: options.html,
         text: options.text,
-        reply_to: options.replyTo,
+        replyTo: options.replyTo,
         headers: {
           'X-Campaign-ID': options.metadata.campaignId,
           'X-Prospect-ID': options.metadata.prospectId,
@@ -158,7 +388,46 @@ export class EmailService {
         messageId: result.data?.id,
       };
     } catch (error) {
-      console.error('[EmailService] Failed to send email:', error);
+      console.error('[EmailService] Resend failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Send email via SMTP (nodemailer)
+   */
+  private async sendViaSMTP(options: SendEmailOptions): Promise<SendResult> {
+    if (!this.smtpTransport) {
+      return { success: false, error: 'SMTP not configured' };
+    }
+
+    try {
+      const info = await this.smtpTransport.sendMail({
+        from: `"${this.fromName}" <${this.fromEmail}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+        replyTo: options.replyTo,
+        headers: {
+          'X-Campaign-ID': options.metadata.campaignId,
+          'X-Prospect-ID': options.metadata.prospectId,
+          'X-Sequence-Number': options.metadata.sequenceNumber.toString(),
+        },
+      });
+
+      this.sentThisHour++;
+      this.sentToday++;
+
+      return {
+        success: true,
+        messageId: info.messageId,
+      };
+    } catch (error) {
+      console.error('[EmailService] SMTP failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -306,12 +575,13 @@ export class EmailService {
     
     const defaultVars: Record<string, string> = {
       first_name: contact?.name?.split(' ')[0] || 'there',
-      full_name: contact?.name || '',
-      company_name: prospect.companyName,
-      title: contact?.title || '',
-      industry: prospect.industry,
-      city: prospect.location.city,
-      state: prospect.location.state,
+      full_name: contact?.name || 'there',
+      company_name: prospect.companyName || 'your company',
+      company: prospect.companyName || 'your company', // Alias for company_name
+      title: contact?.title || 'your role',
+      industry: prospect.industry || 'your industry',
+      city: prospect.location?.city || 'your area',
+      state: prospect.location?.state || '',
     };
 
     const allVars = { ...defaultVars, ...variables };

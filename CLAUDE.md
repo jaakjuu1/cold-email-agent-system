@@ -47,44 +47,39 @@ docker-compose logs -f        # Follow logs
 
 - **apps/backend**: Express API server with WebSocket (Socket.io), uses BullMQ for job queues
 - **apps/frontend**: React 18 + Vite + Tailwind CSS + Zustand + TanStack Query
-- **packages/agent**: Claude orchestration using `@anthropic-ai/claude-agent-sdk` with Skills auto-discovery and Turso (libsql) for AgentFS storage
+- **packages/agent**: AI orchestration using Vercel AI SDK (`ai`) with `@ai-sdk/deepseek` provider and Turso (libsql) for AgentFS storage
 - **packages/shared**: Shared Zod schemas and TypeScript types - must be built before other packages
 - **e2e/**: Playwright E2E tests
 
-### Agent Skills System
+### Agent Tools System
 
-Located in `.claude/skills/`, skills are loaded automatically by the Claude Agent SDK when `settingSources: ["project"]` is configured. Each skill has:
-- `SKILL.md`: YAML frontmatter with `description` field (triggers skill invocation) + workflow documentation
-- Python scripts for external API integrations (Firecrawl, Perplexity, Google Maps)
-- TypeScript listeners for event-driven processing
+Located in `packages/agent/src/tools/`, tools are TypeScript modules using Vercel AI SDK's `tool()` helper with Zod schemas for parameter validation. The Orchestrator in `packages/agent/src/orchestrator.ts` uses `generateText()` and `generateObject()` with tools enabled. DeepSeek V3.2 autonomously invokes tools based on the prompt.
 
-The Orchestrator in `packages/agent/src/orchestrator.ts` uses `query()` from the SDK with skills enabled. Claude autonomously invokes skills based on the prompt and skill descriptions.
-
-Skills:
-- **client-discovery**: Website analysis and ICP generation
-- **lead-discovery**: Google Maps scraping and company enrichment
-- **email-personalization**: Personalized email sequence generation
-- **email-tracking**: IMAP monitoring and response detection
-- **campaign-management**: Rate limiting and analytics
+Tools:
+- **Client Discovery**: `website-analyzer`, `market-researcher`, `icp-validator`
+- **Lead Discovery**: `google-maps-scraper`, `prospect-parser`, `company-enricher`, `contact-finder`, `data-validator`
+- **Email**: `email-quality-checker`
+- **Tracking**: `response-classifier`, `bounce-detector`, `engagement-scorer`
+- **Campaign Management**: `rate-limiter`
 
 ### Data Flow
 
 1. Client onboarding → Website analysis → ICP generation (packages/agent/orchestrator.ts)
-2. ICP approval → Lead discovery via Google Maps (skills/lead-discovery/)
-3. Lead enrichment → Email sequence generation (skills/email-personalization/)
+2. ICP approval → Lead discovery via Google Maps (packages/agent/src/tools/)
+3. Lead enrichment → Email sequence generation (packages/agent/src/tools/)
 4. Campaign execution → Real-time tracking via WebSocket (apps/backend/websocket/)
 
 ### Key Patterns
 
 - **Type definitions**: Shared Zod schemas in `packages/shared/src/types/index.ts` - both runtime validation and TypeScript types
-- **Backend services**: Located in `apps/backend/src/services/`, orchestrator.service.ts coordinates Claude agent calls
+- **Backend services**: Located in `apps/backend/src/services/`, orchestrator.service.ts coordinates AI agent calls
 - **Frontend state**: Zustand stores in `apps/frontend/src/store/`, React Query for server state
-- **AI integration**: Orchestrator class in `packages/agent/src/orchestrator.ts` uses Claude Agent SDK's `query()` with skills from `.claude/skills/`
+- **AI integration**: Orchestrator class in `packages/agent/src/orchestrator.ts` uses Vercel AI SDK's `generateText()` and `generateObject()` with DeepSeek V3.2
 
 ## Environment Setup
 
 Copy `env.example` to `.env` and configure:
-- `ANTHROPIC_API_KEY`: Required for Claude integration
+- `DEEPSEEK_API_KEY`: Required for DeepSeek AI integration
 - `GOOGLE_MAPS_API_KEY`: Required for lead discovery
 - `FIRECRAWL_API_KEY`, `PERPLEXITY_API_KEY`: Required for research
 - `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`: Production database

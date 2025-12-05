@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ClientController } from '../controllers/client.controller.js';
 import { validateBody } from '../middleware/validation.middleware.js';
-import { CreateClientSchema } from '@cold-outreach/shared';
+import { CreateClientSchema, CreateEmailSettingsSchema, UpdateEmailSettingsSchema } from '@cold-outreach/shared';
 import { z } from 'zod';
 
 const router = Router();
@@ -41,6 +41,20 @@ router.put('/:id/icp', controller.updateICP);
 
 // Approve ICP
 router.post('/:id/icp/approve', controller.approveICP);
+
+// Email Settings routes
+router.get('/:id/email-settings', controller.getEmailSettings);
+router.post(
+  '/:id/email-settings',
+  validateBody(CreateEmailSettingsSchema.omit({ clientId: true })),
+  controller.createEmailSettings
+);
+router.put(
+  '/:id/email-settings',
+  validateBody(UpdateEmailSettingsSchema),
+  controller.updateEmailSettings
+);
+router.delete('/:id/email-settings', controller.deleteEmailSettings);
 
 export default router;
 

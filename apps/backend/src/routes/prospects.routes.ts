@@ -44,5 +44,11 @@ router.get('/:id/tracking', controller.getTracking);
 // Manually update prospect status
 router.put('/:id/status', controller.updateStatus);
 
+// Start deep research for a prospect
+router.post('/:id/deep-research', controller.deepResearch);
+
+// Get deep research results for a prospect
+router.get('/:id/deep-research', controller.getDeepResearch);
+
 export default router;
 
